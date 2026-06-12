@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>安全训练日志 · 179cm / 96kg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #131318;
+    --bg-elevated: #1c1c24;
+    --border: #26262f;
+    --border-strong: #3a3a47;
+    --text: #ebe9e4;
+    --text-dim: #8b8a93;
+    --text-faint: #595862;
+    --accent: #34d399;
+    --accent-dim: #34d39922;
+    --stretch: #60a5fa;
+    --stretch-dim: #60a5fa22;
+    --warn: #fbbf24;
+    --warn-dim: #fbbf2418;
+    --success: #6ee787;
+    --success-dim: #6ee78718;
+    --danger: #f87171;
+    --serif: 'Fraunces', Georgia, serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+  body { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+  .header { padding: calc(env(safe-area-inset-top) + 16px) 20px 12px; background: var(--bg); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+  .header-row { display: flex; align-items: baseline; justify-content: space-between; }
+  .title { font-family: var(--serif); font-weight: 600; font-size: 28px; letter-spacing: -0.02em; margin: 0; font-variation-settings: 'opsz' 144; }
+  .title em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .date { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.05em; text-transform: uppercase; }
+  .day-tabs { display: flex; gap: 6px; margin-top: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab { flex: 1; min-width: 0; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; letter-spacing: 0.02em; }
+  .day-tab .day-num { display: block; font-size: 14px; color: var(--text); margin-bottom: 2px; font-weight: 600; }
+  .day-tab.active { background: var(--accent); border-color: var(--accent); color: #032217; }
+  .day-tab.active .day-num { color: #032217; }
+  .day-tab.completed::after { content: '●'; color: var(--success); margin-left: 4px; font-size: 8px; }
+  .main { padding: 20px; }
+  .day-header { margin-bottom: 18px; }
+  .day-meta { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .day-title { font-family: var(--serif); font-size: 32px; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 14px; font-variation-settings: 'opsz' 144; }
+  .day-title em { color: var(--accent); font-style: italic; }
+  .progress-row { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .progress-bar { flex: 1; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden; position: relative; }
+  .progress-fill { position: absolute; inset: 0; width: 0%; background: var(--accent); transition: width 0.3s ease-out; border-radius: 2px; }
+  .alert-banner { background: var(--warn-dim); border: 1px solid rgba(251,191,36,0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .alert-banner .alert-title { font-family: var(--mono); font-size: 10px; color: var(--warn); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; }
+  .alert-banner .alert-body { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  .alert-banner .alert-body strong { color: var(--warn); }
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0 14px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--stretch); }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .exercise { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 16px; margin-bottom: 12px; transition: border-color 0.2s; }
+  .exercise.done { border-color: var(--success-dim); background: linear-gradient(180deg, var(--success-dim) 0%, var(--bg-card) 100%); }
+  .exercise.stretch { border-color: rgba(96, 165, 250, 0.2); }
+  .exercise.stretch.done { border-color: var(--success-dim); }
+  .exercise.warn-ex { border-color: rgba(251,191,36,0.2); }
+  .exercise-num { font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; margin-bottom: 4px; }
+  .exercise-name { font-family: var(--serif); font-size: 20px; font-weight: 500; line-height: 1.25; letter-spacing: -0.01em; margin: 0 0 4px; font-variation-settings: 'opsz' 72; }
+  .exercise-muscle { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--accent); background: var(--accent-dim); padding: 2px 7px; border-radius: 4px; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .exercise.stretch .exercise-muscle { color: var(--stretch); background: var(--stretch-dim); }
+  .exercise-badge { display: inline-block; font-family: var(--mono); font-size: 9px; color: var(--warn); background: var(--warn-dim); padding: 2px 7px; border-radius: 4px; margin-bottom: 12px; margin-left: 6px; letter-spacing: 0.05em; border: 1px solid rgba(251,191,36,0.2); }
+  .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; margin-top: 8px; }
+  .spec { background: var(--bg-elevated); padding: 10px 12px; border-radius: 8px; }
+  .spec-label { font-family: var(--mono); font-size: 9px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .spec-value { font-family: var(--mono); font-size: 14px; color: var(--text); font-weight: 600; }
+  .weight-row { background: var(--bg-elevated); padding: 12px; border-radius: 8px; margin-bottom: 14px; border-left: 3px solid var(--accent); }
+  .exercise.stretch .weight-row { border-left-color: var(--stretch); }
+  .exercise.warn-ex .weight-row { border-left-color: var(--warn); }
+  .weight-label { font-family: var(--mono); font-size: 9px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .weight-value { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.5; }
+  .actual-row { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 8px; }
+  .actual-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+  .actual-input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-strong); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 4px 0; outline: none; }
+  .actual-input:focus { border-color: var(--accent); }
+  .actual-input::placeholder { color: var(--text-faint); }
+  .sets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .set-btn { width: 44px; height: 44px; border-radius: 10px; background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text-dim); font-family: var(--mono); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .set-btn:active { transform: scale(0.92); }
+  .set-btn.done { background: var(--success); border-color: var(--success); color: #053d12; }
+  .notes { font-family: var(--sans); font-size: 12px; line-height: 1.6; color: var(--text-dim); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .notes .warn-note { color: var(--warn); }
+  .info-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+  .info-block.highlight { border-color: var(--accent-dim); }
+  .info-block.warn-block { border-color: rgba(251,191,36,0.25); }
+  .info-title { font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .info-title em { color: var(--accent); font-style: italic; }
+  .info-title.warn-title em { color: var(--warn); }
+  .info-block ul { padding-left: 18px; margin: 8px 0; font-size: 14px; line-height: 1.7; color: var(--text-dim); }
+  .info-block li { margin-bottom: 4px; }
+  .info-block li strong { color: var(--text); font-weight: 600; }
+  .info-block li strong.warn { color: var(--warn); }
+  .info-block li strong.danger { color: var(--danger); }
+  .info-block p { font-size: 14px; line-height: 1.65; color: var(--text-dim); margin: 8px 0; }
+  .info-block p strong { color: var(--text); font-weight: 600; }
+  .weight-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 10px 0; }
+  .weight-table th { font-family: var(--mono); font-size: 9px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+  .weight-table td { padding: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); vertical-align: middle; }
+  .weight-table td:first-child { color: var(--text); font-size: 13px; }
+  .weight-table td:last-child { color: var(--accent); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .weight-table tr:last-child td { border-bottom: none; }
+  .bp-checker { background: var(--bg-elevated); border-radius: 10px; padding: 14px; margin-bottom: 18px; border: 1px solid rgba(251,191,36,0.2); }
+  .bp-checker-title { font-family: var(--mono); font-size: 10px; color: var(--warn); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; }
+  .bp-input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bp-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 16px; padding: 10px 12px; outline: none; text-align: center; }
+  .bp-input:focus { border-color: var(--warn); }
+  .bp-slash { font-family: var(--mono); font-size: 20px; color: var(--text-dim); }
+  .bp-unit { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .bp-result { font-family: var(--mono); font-size: 12px; padding: 8px 12px; border-radius: 8px; text-align: center; font-weight: 600; display: none; }
+  .bp-result.ok { background: var(--success-dim); color: var(--success); display: block; }
+  .bp-result.warn { background: var(--warn-dim); color: var(--warn); display: block; }
+  .bp-result.stop { background: rgba(248,113,113,0.1); color: var(--danger); display: block; }
+  .footer { padding: 24px 20px 32px; display: flex; gap: 10px; border-top: 1px solid var(--border); margin-top: 30px; }
+  .btn { flex: 1; padding: 14px; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 10px; color: var(--text-dim); font-family: var(--mono); font-size: 12px; font-weight: 500; cursor: pointer; letter-spacing: 0.05em; transition: all 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-danger { color: #ff6b6b; border-color: #ff6b6b40; }
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-row">
+    <h1 class="title">安全<em>训练</em></h1>
+    <span class="date" id="date"></span>
+  </div>
+  <div class="day-tabs" id="dayTabs"></div>
+</header>
+<main class="main" id="main"></main>
+<div class="footer">
+  <button class="btn" onclick="resetDay()">重置本日</button>
+  <button class="btn btn-danger" onclick="resetAll()">清空全部</button>
+</div>
+<script>
+// 179cm / 96kg · 高血压 · 糖尿病 · 手腕骨折史（疼痛） · 脚踝损伤
+// 核心原则：保护手腕（用护腕/拳击式握法）、绕开脚踝负重、全程不憋气、血糖监测
+
+const PLAN = {
+  day1: {
+    title: '胸 + 核心（推系）',
+    focus: '胸',
+    exercises: [
+      {
+        name: '坐姿胸推器械',
+        muscle: '胸 主项',
+        badge: '手腕友好',
+        weight: '器械 30-40kg 起步，感受胸部发力',
+        sets: 4, reps: '10-12', rest: '90秒',
+        notes: '⚠️ 手腕骨折史：优先选择器械而非杠铃/哑铃。如果手腕不痛可改哑铃卧推，用中立握（对握）减少手腕压力。全程鼻吸嘴呼，不憋气。肩胛收紧，下放感受胸部拉伸'
+      },
+      {
+        name: '蝴蝶机夹胸',
+        muscle: '胸 收缩',
+        badge: '手腕零压',
+        weight: '蝴蝶机 20-30kg，末端挤压2秒',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '手腕处于自然位置，完全没有腕关节压力。轻重量慢速度，感受胸部充血。高血压：节奏放慢，不做超级组'
+      },
+      {
+        name: '绳索胸部下压（对握）',
+        muscle: '下胸 + 胸缝',
+        badge: '手腕友好',
+        weight: '绳索 8-12kg/单边',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '双手各握一侧绳索，从上向下交叉夹胸。全程手腕保持中立，不弯折。感受胸部底部收缩'
+      },
+      {
+        name: '仰卧哑铃飞鸟',
+        muscle: '胸 拉伸',
+        badge: '手腕轻度',
+        weight: '哑铃 6-8kg / 手（中立握，掌心相对）',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '⚠️ 中立握（哑铃竖放，掌心相对），减少手腕压力。手臂微屈，感受胸部两侧拉伸。如手腕有不适立刻停止'
+      },
+      {
+        name: '卷腹',
+        muscle: '上腹',
+        weight: '自重',
+        sets: 3, reps: '15-20', rest: '45秒',
+        notes: '顶峰收缩，慢起慢放。高血糖：核心训练有助于胰岛素敏感性，坚持做'
+      },
+      {
+        name: '死虫式（Dead Bug）',
+        muscle: '核心 深层',
+        weight: '自重',
+        sets: 3, reps: '10-12 / 侧', rest: '45秒',
+        notes: '仰卧，手脚交替伸出，腰背全程贴地。比平板支撑更安全（血压不升），激活深层核心，对腰椎保护极好。96kg体重下更优选'
+      },
+      {
+        name: '门框胸部拉伸',
+        muscle: '拉伸 · 胸部', isStretch: true,
+        weight: '单臂屈肘抵住门框，身体前转',
+        sets: 2, reps: '30秒 / 边', rest: '—',
+        notes: '推胸后必拉，防止含胸驼背'
+      },
+      {
+        name: '手腕活动放松',
+        muscle: '拉伸 · 手腕', isStretch: true,
+        weight: '双手合十，向下压掌；再反向向上翻压；绕圈10次',
+        sets: 1, reps: '各方向2组', rest: '—',
+        notes: '★ 每次训练结束必做。手腕骨折史者要给关节充分放松'
+      },
+    ]
+  },
+  day2: {
+    title: '背 · 背阔主导（拉系）',
+    focus: '背',
+    exercises: [
+      {
+        name: '高位下拉（宽握）',
+        muscle: '背阔 主项',
+        badge: '手腕适中',
+        weight: '40-55kg（体重45-60%，比正常人低）',
+        sets: 4, reps: '10-12', rest: '90秒',
+        notes: '⚠️ 手腕保护：可戴护腕。拉到锁骨位置，绝对不拉颈后。先做肩胛下沉再发力，不要耸肩。全程不憋气，呼气时拉下来'
+      },
+      {
+        name: '坐姿绳索划船（中立握V把）',
+        muscle: '背 厚度',
+        badge: '手腕友好',
+        weight: '35-45kg',
+        sets: 3, reps: '10-12', rest: '90秒',
+        notes: 'V把中立握对手腕最友好。肘部贴身，拉到腹部。感受背部中间收缩，不借腰力'
+      },
+      {
+        name: '直臂下拉（绳索）',
+        muscle: '背阔 孤立',
+        badge: '手腕友好',
+        weight: '12-18kg',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '双臂伸直只靠背阔发力。这个动作手腕基本无压力，适合骨折史患者。感受背阔向下发力'
+      },
+      {
+        name: '反向飞鸟（哑铃）',
+        muscle: '后束三角',
+        badge: '手腕轻度',
+        weight: '哑铃 4-6kg / 手（中立握）',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '俯身，手臂微屈，向两侧展开。中立握减少手腕扭转。重量轻，手腕压力极小'
+      },
+      {
+        name: '坐姿划船器械',
+        muscle: '背 厚度',
+        badge: '手腕零压',
+        weight: '器械 35-50kg',
+        sets: 3, reps: '10-12', rest: '90秒',
+        notes: '器械握把固定，手腕无需稳定用力，对骨折史非常友好。挤压顶峰停1秒'
+      },
+      {
+        name: '婴儿式背阔拉伸',
+        muscle: '拉伸 · 背阔', isStretch: true,
+        weight: '跪坐，双手前伸到最远，额头触地或悬空',
+        sets: 2, reps: '45秒', rest: '—',
+        notes: '★ 练背后最重要的拉伸，全背放松。96kg体重训练后背部压力较大，不要跳过'
+      },
+      {
+        name: '颈部侧拉伸',
+        muscle: '拉伸 · 颈肩', isStretch: true,
+        weight: '右手绕过头顶轻拉左侧头部，左耳靠近右肩，保持',
+        sets: 1, reps: '30秒 / 边', rest: '—',
+        notes: '划船后颈肩容易紧张，拉伸后血压更稳定'
+      },
+    ]
+  },
+  day3: {
+    title: '肩 + 手臂（轻）',
+    focus: '肩',
+    exercises: [
+      {
+        name: '坐姿哑铃肩推（中立握）',
+        muscle: '肩 主项',
+        badge: '手腕注意',
+        weight: '哑铃 8-10kg / 手（中立握对握，减少手腕压力）',
+        sets: 3, reps: '10-12', rest: '90秒',
+        notes: '⚠️ 重要：用中立握（哑铃平行，掌心相对）而非正握，手腕压力降低50%+。不冲极限，不憋气。高血压：肩推相对安全但要控制节奏，3秒推起2秒放下'
+      },
+      {
+        name: '侧平举（哑铃）',
+        muscle: '★★ 中束三角',
+        badge: '手腕友好',
+        weight: '哑铃 4-6kg / 手 ← 宁轻勿重',
+        sets: 4, reps: '12-15', rest: '60秒',
+        notes: '★★ 肩部变宽靠这个。极轻重量，手腕几乎无压力。肘微屈举到大臂平行地面，顶部停0.5秒。96kg体重做侧平举不需要很重'
+      },
+      {
+        name: '绳索侧平举',
+        muscle: '中束三角 孤立',
+        badge: '手腕友好',
+        weight: '绳索 5-8kg / 单边',
+        sets: 3, reps: '15', rest: '60秒',
+        notes: '单臂绳索侧平举，全程张力均匀。比哑铃更容易控制，对手腕更稳定。单侧做完换对侧'
+      },
+      {
+        name: '哑铃二头弯举（中立→旋转）',
+        muscle: '二头',
+        badge: '手腕注意',
+        weight: '哑铃 8-10kg / 手',
+        sets: 3, reps: '12', rest: '60秒',
+        notes: '⚠️ 手腕骨折侧如有不适，可全程保持中立握（锤式弯举），不做旋转。上臂夹紧固定，只动前臂。感受二头收缩'
+      },
+      {
+        name: '绳索三头下压（直杆）',
+        muscle: '三头',
+        badge: '手腕友好',
+        weight: '绳索 15-20kg',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '直杆下压手腕略有压力，如不适换绳索（掌心相对）。上臂不动，下压到底停1秒'
+      },
+      {
+        name: '卷腹',
+        muscle: '核心',
+        weight: '自重',
+        sets: 3, reps: '15-20', rest: '45秒',
+        notes: '顶峰收缩'
+      },
+      {
+        name: '死虫式',
+        muscle: '核心 深层',
+        weight: '自重',
+        sets: 3, reps: '10 / 侧', rest: '45秒',
+        notes: '腰背全程贴地，交替伸展对侧手脚'
+      },
+      {
+        name: '三角肌交叉拉伸',
+        muscle: '拉伸 · 肩部', isStretch: true,
+        weight: '一只手水平横过胸前，另一只手压住肘往身体方向拉',
+        sets: 2, reps: '30秒 / 边', rest: '—',
+        notes: '肩部和后背交界处有拉伸感'
+      },
+      {
+        name: '手腕活动放松',
+        muscle: '拉伸 · 手腕', isStretch: true,
+        weight: '双手合十向下压掌 → 反向翻压 → 绕圈',
+        sets: 1, reps: '各方向2组', rest: '—',
+        notes: '★ 肩/臂日后手腕最需要放松'
+      },
+    ]
+  },
+  day4: {
+    title: '下肢替代 + 全身核心',
+    focus: '下肢',
+    exercises: [
+      {
+        name: '坐姿腿举机',
+        muscle: '腿 主项',
+        badge: '踝关节安全',
+        weight: '60-80kg 起步，脚踝不受力',
+        sets: 4, reps: '10-12', rest: '90秒',
+        notes: '★ 脚踝损伤首选！整个过程脚踝无承重压力，只有膝关节和股四头用力。脚位中等，脚尖略外八。不要锁死膝关节。高血压：腿举时不憋气，推起时呼气'
+      },
+      {
+        name: '坐姿腿弯举',
+        muscle: '股二头 孤立',
+        badge: '踝关节安全',
+        weight: '25-35kg',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '脚踝全程无压力。末端充分收缩，慢放2秒。配合腿举一推一拉，腿部比较均衡'
+      },
+      {
+        name: '坐姿腿伸',
+        muscle: '股四头 孤立',
+        badge: '踝关节安全',
+        weight: '20-30kg',
+        sets: 3, reps: '12-15', rest: '60秒',
+        notes: '脚踝无承重。顶部停1秒，慢放。⚠️ 如果膝盖有不适立刻停止，告知教练调整坐姿'
+      },
+      {
+        name: '坐姿提踵',
+        muscle: '小腿',
+        badge: '踝关节轻度',
+        weight: '自重（坐姿，膝盖放重物或用器械）',
+        sets: 3, reps: '15-20', rest: '45秒',
+        notes: '⚠️ 踝关节损伤注意：坐姿提踵比站姿压力小很多。脚跟充分下沉再上提，动作幅度量力而行，如有疼痛停止'
+      },
+      {
+        name: '悬垂举腿',
+        muscle: '下腹 + 髋屈肌',
+        weight: '自重（抓单杠或臂托架）',
+        sets: 3, reps: '10-15', rest: '60秒',
+        notes: '脚踝完全离地，无承重压力。控制下放，别甩腿借力。是96kg人群非常好的核心+下腹训练'
+      },
+      {
+        name: '卷腹',
+        muscle: '上腹',
+        weight: '自重',
+        sets: 3, reps: '15-20', rest: '45秒',
+        notes: '顶峰收缩，配合悬垂举腿做完整核心'
+      },
+      {
+        name: '坐姿腿后侧拉伸',
+        muscle: '拉伸 · 股二头', isStretch: true,
+        weight: '坐凳子边缘，一腿伸直，从髋部往前折叠',
+        sets: 2, reps: '45秒 / 边', rest: '—',
+        notes: '从髋关节折叠，不是弯腰。脚踝无压力'
+      },
+      {
+        name: '坐姿臀部拉伸（四字形）',
+        muscle: '拉伸 · 臀部', isStretch: true,
+        weight: '坐凳子，一脚踝放对侧膝盖上，身体前倾',
+        sets: 2, reps: '45秒 / 边', rest: '—',
+        notes: '腿日后必做。臀部紧张会引起腰痛，96kg体重下更明显'
+      },
+    ]
+  },
+  info: { title: '原则与注意', focus: '安全' }
+};
+
+const PRINCIPLES_HTML = `
+  <div class="alert-banner">
+    <div class="alert-title">⚕️ 每次训练前必确认</div>
+    <div class="alert-body">
+      血糖：<strong>训练前血糖建议在 6-14 mmol/L 之间</strong>。低于5.6请先吃东西，高于16.7请勿训练。<br>
+      血压：<strong>收缩压 &lt; 160 可训练，160-180 减量，&gt; 180 停练</strong>。<br>
+      手腕：每次训练前做2分钟热身活动。有明显疼痛请告知教练。<br>
+      脚踝：本计划已完全回避站姿下肢负重，如有新的肿胀立刻停止。
+    </div>
+  </div>
+
+  <div class="info-block highlight">
+    <h2 class="info-title">四大<em>保护原则</em></h2>
+    <p><strong>1. 手腕保护</strong><br>优先用器械和绳索。哑铃动作全用中立握（掌心相对）。所有推类动作戴护腕。如手腕在动作中感到疼痛，立刻换器械替代。</p>
+    <p><strong>2. 脚踝保护</strong><br>本计划腿日全部为坐姿/仰卧器械动作，脚踝不承受体重压力。不做深蹲、弓步、站姿提踵、有氧跑步等。待脚踝完全康复后再引入。</p>
+    <p><strong>3. 血压管理</strong><br>全程不憋气（发力时呼气，还原时吸气）。不做力竭训练，每组留3次余量。避免长时间等长收缩（平板支撑用死虫式替代）。训练节奏放慢。</p>
+    <p><strong>4. 血糖管理</strong><br>训练前30分钟适量进食（水果/面包/牛奶）。训练后30分钟内补充蛋白质+少量碳水。力量训练比有氧更有助于长期血糖控制（提升肌肉量=提升胰岛素敏感性）。</p>
+  </div>
+
+  <div class="info-block warn-block">
+    <h2 class="info-title warn-title">绝对<em>禁止</em>的动作</h2>
+    <ul>
+      <li><strong class="danger">杠铃深蹲</strong> — 脚踝+手腕双重压力，现阶段完全禁止</li>
+      <li><strong class="danger">跑步/椭圆机/跳绳</strong> — 脚踝冲击，禁止</li>
+      <li><strong class="danger">杠铃卧推</strong> — 手腕固定在旋前位，骨折史禁止</li>
+      <li><strong class="danger">罗马尼亚硬拉/普通硬拉</strong> — 手腕和脚踝双重风险</li>
+      <li><strong class="danger">保加利亚分腿蹲</strong> — 脚踝需要稳定支撑，禁止</li>
+      <li><strong class="warn">力竭训练</strong> — 会导致血压骤升，禁止</li>
+      <li><strong class="warn">超级组/循环训练</strong> — 心率过高，血压风险，暂缓</li>
+    </ul>
+  </div>
+
+  <div class="info-block highlight">
+    <h2 class="info-title">起步重量<em>速查表</em></h2>
+    <p style="font-size:12px;color:var(--text-faint);margin-top:0">基于 179cm / 96kg 定制 · 手腕保护版</p>
+    <table class="weight-table">
+      <tr><th>动作</th><th>起步重量</th></tr>
+      <tr><td>坐姿胸推器械</td><td>30-40kg</td></tr>
+      <tr><td>蝴蝶机夹胸</td><td>20-30kg</td></tr>
+      <tr><td>高位下拉</td><td>40-55kg（戴护腕）</td></tr>
+      <tr><td>坐姿绳索划船</td><td>35-45kg</td></tr>
+      <tr><td>坐姿哑铃肩推（中立握）</td><td>8-10kg / 手</td></tr>
+      <tr><td>侧平举 ⚠️</td><td>4-6kg / 手（宁轻勿重）</td></tr>
+      <tr><td>坐姿腿举</td><td>60-80kg</td></tr>
+      <tr><td>坐姿腿弯举</td><td>25-35kg</td></tr>
+    </table>
+  </div>
+
+  <div class="info-block">
+    <h2 class="info-title">4天分化<em>怎么排</em></h2>
+    <ul>
+      <li><strong>推荐排法</strong>：Day1 → Day2 → 休息 → Day3 → Day4 → 休息 休息</li>
+      <li>和朋友同期训练，跟对方的日期对齐即可</li>
+      <li>每两次训练之间保证1天休息（血糖和血压恢复都需要）</li>
+      <li>下肢日（Day4）后第二天会酸，腿部器械动作也会有延迟酸痛</li>
+    </ul>
+  </div>
+
+  <div class="info-block warn-block">
+    <h2 class="info-title warn-title">饮食<em>速查（糖尿病版）</em></h2>
+    <ul>
+      <li><strong>蛋白质</strong>：130-170g/天（体重 × 1.4-1.8g，肾功能正常前提下）</li>
+      <li><strong>训练前30分钟</strong>：适量低GI碳水（全麦面包一片/苹果一个）</li>
+      <li><strong>训练后</strong>：30分钟内蛋白粉（分离乳清，无糖款）+ 少量碳水</li>
+      <li><strong class="warn">避免</strong>：训练前2小时大量精制碳水，避免血糖剧烈波动</li>
+      <li>总热量建议咨询营养师，糖尿病饮食方案需个性化</li>
+    </ul>
+  </div>
+
+  <div class="info-block">
+    <h2 class="info-title">必须<em>做的事</em></h2>
+    <ul>
+      <li>训练前 <strong>热身5分钟</strong>（关节绕环 + 手腕热身）</li>
+      <li><strong>训练前后量血压</strong>（手机备忘录记录）</li>
+      <li>有条件训练前测 <strong>血糖</strong></li>
+      <li>带 <strong>糖块/含糖饮料</strong> 在包里，低血糖时用</li>
+      <li>手腕 <strong>戴护腕</strong>（推类和拉类都戴）</li>
+      <li>每月拍照1次对比，别只看体重秤</li>
+    </ul>
+  </div>
+`;
+
+let state = loadState();
+let currentDay = state.currentDay || 'day1';
+
+function loadState() {
+  try { const s = localStorage.getItem('safeTrainState96'); return s ? JSON.parse(s) : { sets: {}, weights: {}, currentDay: 'day1' }; }
+  catch (e) { return { sets: {}, weights: {}, currentDay: 'day1' }; }
+}
+function saveState() { try { localStorage.setItem('safeTrainState96', JSON.stringify(state)); } catch (e) {} }
+function toggleSet(dayKey, exIdx, setIdx) {
+  const key = `${dayKey}_${exIdx}_${setIdx}`;
+  state.sets[key] = !state.sets[key];
+  saveState(); render();
+}
+function saveActualWeight(dayKey, exIdx, value) { state.weights[`${dayKey}_${exIdx}_actual`] = value; saveState(); }
+function switchDay(day) { currentDay = day; state.currentDay = day; saveState(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function resetDay() {
+  if (!confirm('重置本日所有打勾记录？')) return;
+  Object.keys(state.sets).forEach(k => { if (k.startsWith(currentDay + '_')) delete state.sets[k]; });
+  saveState(); render();
+}
+function resetAll() {
+  if (!confirm('清空全部数据？')) return;
+  state = { sets: {}, weights: {}, currentDay: 'day1' }; saveState(); currentDay = 'day1'; render();
+}
+function isDayComplete(dayKey) {
+  if (dayKey === 'info') return false;
+  const exs = PLAN[dayKey].exercises;
+  for (let i = 0; i < exs.length; i++) for (let s = 0; s < exs[i].sets; s++) if (!state.sets[`${dayKey}_${i}_${s}`]) return false;
+  return true;
+}
+function getDayProgress(dayKey) {
+  if (!PLAN[dayKey].exercises) return { done: 0, total: 0, pct: 0 };
+  const exs = PLAN[dayKey].exercises;
+  let total = 0, done = 0;
+  exs.forEach((ex, i) => { for (let s = 0; s < ex.sets; s++) { total++; if (state.sets[`${dayKey}_${i}_${s}`]) done++; } });
+  return { done, total, pct: total ? (done/total*100) : 0 };
+}
+
+function checkBP() {
+  const sys = parseInt(document.getElementById('bpSys').value);
+  const dia = parseInt(document.getElementById('bpDia').value);
+  const result = document.getElementById('bpResult');
+  if (isNaN(sys) || isNaN(dia)) { result.className = 'bp-result'; return; }
+  if (sys >= 180 || dia >= 110) {
+    result.className = 'bp-result stop';
+    result.textContent = '🚫 今天停止训练，血压过高，请休息并联系医生';
+  } else if (sys >= 160 || dia >= 100) {
+    result.className = 'bp-result warn';
+    result.textContent = '⚠️ 可轻度训练，所有重量减半，全程监测感受';
+  } else {
+    result.className = 'bp-result ok';
+    result.textContent = '✓ 血压正常，可以训练';
+  }
+}
+
+function render() {
+  const d = new Date();
+  document.getElementById('date').textContent = `${d.getMonth()+1}月${d.getDate()}日 · ${['日','一','二','三','四','五','六'][d.getDay()]}`;
+  const tabsEl = document.getElementById('dayTabs');
+  const days = [
+    { key: 'day1', label: '推', num: 'Day 1' },
+    { key: 'day2', label: '拉', num: 'Day 2' },
+    { key: 'day3', label: '肩臂', num: 'Day 3' },
+    { key: 'day4', label: '下肢', num: 'Day 4' },
+    { key: 'info', label: '原则', num: 'Info' }
+  ];
+  tabsEl.innerHTML = days.map(d => {
+    const complete = d.key !== 'info' && isDayComplete(d.key) ? 'completed' : '';
+    const active = currentDay === d.key ? 'active' : '';
+    return `<div class="day-tab ${active} ${complete}" onclick="switchDay('${d.key}')"><span class="day-num">${d.num}</span>${d.label}</div>`;
+  }).join('');
+
+  const main = document.getElementById('main');
+  if (currentDay === 'info') {
+    main.innerHTML = `<div class="day-header"><div class="day-meta">SAFETY / PRINCIPLES / TIPS</div><h2 class="day-title">安全与<em>原则</em></h2></div>${PRINCIPLES_HTML}`;
+    return;
+  }
+
+  const day = PLAN[currentDay];
+  const prog = getDayProgress(currentDay);
+  let firstStretchIndex = day.exercises.findIndex(ex => ex.isStretch);
+  let exercisesHTML = '';
+
+  // BP Checker
+  const bpChecker = `
+    <div class="bp-checker">
+      <div class="bp-checker-title">🩺 训练前血压确认</div>
+      <div class="bp-input-row">
+        <input class="bp-input" id="bpSys" type="number" placeholder="收缩压" oninput="checkBP()">
+        <span class="bp-slash">/</span>
+        <input class="bp-input" id="bpDia" type="number" placeholder="舒张压" oninput="checkBP()">
+        <span class="bp-unit">mmHg</span>
+      </div>
+      <div class="bp-result" id="bpResult"></div>
+    </div>
+  `;
+
+  day.exercises.forEach((ex, i) => {
+    if (i === firstStretchIndex && firstStretchIndex > 0) exercisesHTML += `<div class="section-divider">训练后拉伸 · Cool Down</div>`;
+    let allDone = true;
+    const setBtns = [];
+    for (let s = 0; s < ex.sets; s++) {
+      const key = `${currentDay}_${i}_${s}`;
+      const done = state.sets[key];
+      if (!done) allDone = false;
+      setBtns.push(`<button class="set-btn ${done?'done':''}" onclick="toggleSet('${currentDay}',${i},${s})">${s+1}</button>`);
+    }
+    const actualVal = state.weights[`${currentDay}_${i}_actual`] || '';
+    const stretchClass = ex.isStretch ? 'stretch' : '';
+    const warnClass = ex.badge ? 'warn-ex' : '';
+    const labelText = ex.isStretch ? '拉伸方法' : '推荐重量（96kg版）';
+    const placeholderText = ex.isStretch ? '拉伸感受（可选）' : '如：35kg × 12次';
+    const badgeHTML = ex.badge ? `<span class="exercise-badge">${ex.badge}</span>` : '';
+
+    exercisesHTML += `
+      <div class="exercise ${stretchClass} ${!ex.isStretch && ex.badge ? warnClass : ''} ${allDone?'done':''}">
+        <div class="exercise-num">${ex.isStretch ? 'STRETCH' : 'EXERCISE'} ${String(i+1).padStart(2,'0')}</div>
+        <h3 class="exercise-name">${ex.name}</h3>
+        <span class="exercise-muscle">${ex.muscle}</span>${badgeHTML}
+        <div class="specs">
+          <div class="spec"><div class="spec-label">${ex.isStretch ? '次数 × 时长' : '组数 × 次数'}</div><div class="spec-value">${ex.sets} × ${ex.reps}</div></div>
+          <div class="spec"><div class="spec-label">${ex.isStretch ? '说明' : '组间休息'}</div><div class="spec-value">${ex.rest}</div></div>
+        </div>
+        <div class="weight-row">
+          <div class="weight-label">${labelText}</div>
+          <div class="weight-value">${ex.weight}</div>
+          <div class="actual-row">
+            <span class="actual-label">今天用：</span>
+            <input class="actual-input" type="text" placeholder="${placeholderText}" value="${actualVal}" oninput="saveActualWeight('${currentDay}',${i},this.value)">
+          </div>
+        </div>
+        <div class="sets">${setBtns.join('')}</div>
+        <div class="notes">${ex.notes}</div>
+      </div>
+    `;
+  });
+
+  main.innerHTML = `
+    <div class="day-header">
+      <div class="day-meta">${currentDay.toUpperCase()} / ${day.focus}</div>
+      <h2 class="day-title">${day.title.replace(day.focus, '<em>' + day.focus + '</em>')}</h2>
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" style="width:${prog.pct}%"></div></div>
+        <span>${prog.done}/${prog.total}</span>
+      </div>
+    </div>
+    ${bpChecker}
+    ${exercisesHTML}
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
